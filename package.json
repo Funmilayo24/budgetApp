@@ -16,13 +16,21 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "prisma db seed"
+    "prisma:seed": "prisma db seed",
+    "mobile:sync": "cap sync android",
+    "mobile:open": "cap open android",
+    "mobile:copy": "cap copy android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/core": "^8.4.1",
     "@prisma/client": "^6.19.3",
     "dotenv": "^16.6.1",
     "express": "^4.19.2",
     "prisma": "^6.19.3",
     "resend": "^4.0.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.4.1"
   }
 }

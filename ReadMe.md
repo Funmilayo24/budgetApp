@@ -142,6 +142,46 @@ If Railway gives the budget app its own Postgres service, migrations only run on
 
 If the build fails during `npm ci` at `prisma generate`, check that this repo includes the current `prisma.config.js`. It uses a harmless local fallback URL only so Prisma Client can be generated during build. The real Railway database is still controlled by the `DATABASE_URL` variable during pre-deploy migrations and app runtime.
 
+## Android Mobile App
+
+This repo includes a Capacitor Android project in `android/`. The first mobile version opens the live Railway app configured in `capacitor.config.json`:
+
+```text
+https://budgetapp-production-185c.up.railway.app
+```
+
+When `app.funmilayotobun.com` is fully working, update `server.url` in `capacitor.config.json` to that custom domain and run a sync.
+
+Useful commands:
+
+```bash
+npm run mobile:sync
+npm run mobile:open
+```
+
+If PowerShell blocks `npm`, use:
+
+```bash
+npm.cmd run mobile:sync
+npm.cmd run mobile:open
+```
+
+Building Android locally requires Java/JDK. If Gradle says `JAVA_HOME is not set`, install Android Studio or JDK 21, then set `JAVA_HOME` to the JDK folder and open a new terminal.
+
+To publish on Google Play:
+
+1. Open the Android project with `npm.cmd run mobile:open`.
+1. In Android Studio, create or choose a signing key.
+1. Build a signed Android App Bundle (`.aab`).
+1. Upload the `.aab` in Google Play Console.
+1. Complete the store listing, screenshots, content rating, privacy policy, and Data safety form.
+
+The Android app id is:
+
+```text
+com.funmilayotobun.budgetapp
+```
+
 ## Income
 
 Use `income.html` to record income from sources like salary, freelance work, bonuses, or interest. Supported currencies are:

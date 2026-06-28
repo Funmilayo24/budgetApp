@@ -1,0 +1,9 @@
+{
+  "appId": "com.funmilayotobun.budgetapp",
+  "appName": "Budget App",
+  "webDir": "public",
+  "server": {
+    "url": "https://budgetapp-production-185c.up.railway.app",
+    "cleartext": false
+  }
+}
