@@ -12,7 +12,9 @@ A small full-stack budget tracker with Postgres, Prisma, invite-based signup, an
 - Create debts with balances, categories, minimum payments, due dates, and progress
 - Plan monthly debt payments separately from actual payments
 - Keep debt payment history by salary cycle
-- Navigate with a main menu for Dashboard, Income, Debts, Savings, and Profile
+- Track fixed expenses like rent, electricity, and subscriptions
+- Set savings goals with deadlines and record savings contributions
+- Navigate with a main menu for Dashboard, Income, Fixed Expenses, Debts, Savings, and Profile
 - Track income and expenses by month
 - Set spending limits for budget categories
 - Review monthly totals, remaining cash, and savings rate
@@ -102,6 +104,39 @@ INVITE_FROM_EMAIL="Budget App <onboarding@resend.dev>"
 ```
 
 The budget database maps to `localhost:5433` on your machine so it does not collide with another local Postgres project on the default `5432` port.
+
+## Railway Deployment
+
+To avoid affecting another Railway project, deploy this app as a separate Railway project with its own app service and its own Postgres database service. Do not attach this app to another project's existing service or database, and do not copy another project's `DATABASE_URL`.
+
+Recommended Railway setup:
+
+1. Create a new Railway project for the budget app.
+1. Add a new Postgres service inside that same project.
+1. Add this repository as a new app service.
+1. Set the budget app service variables:
+
+   ```text
+   NODE_ENV=production
+   DATABASE_URL=<the new budget app Postgres DATABASE_URL>
+   APP_BASE_URL=<the public Railway URL or custom domain for this budget app>
+   RESEND_API_KEY=<your Resend API key>
+   EMAIL_FROM=<your verified sender>
+   INVITE_FROM_EMAIL=<your invite sender>
+   REMINDER_FROM_EMAIL=<your reminder sender>
+   SALARY_REMINDER_LEAD_DAYS=3
+   REMINDER_SCHEDULER_INTERVAL_MS=21600000
+   RUN_REMINDERS_ON_START=true
+   DISABLE_REMINDER_SCHEDULER=false
+   ```
+
+The included `railway.json` tells Railway to:
+
+- run Prisma migrations before deployment with `npm run prisma:deploy`
+- start the app with `npm start`
+- use `/api/health` as the health check
+
+If Railway gives the budget app its own Postgres service, migrations only run on that budget app database.
 
 ## Income
 

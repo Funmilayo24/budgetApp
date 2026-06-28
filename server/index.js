@@ -34,6 +34,10 @@ const allowedIncomeFrequencies = new Set([
   "ANNUAL"
 ]);
 
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
+
 app.use(express.json());
 app.use(express.static(publicDir, { extensions: ["html"] }));
 app.use("/api", debtRoutes);
