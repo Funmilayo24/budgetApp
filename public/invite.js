@@ -6,7 +6,7 @@ const logoutButton = document.querySelector("#logoutButton");
 
 devLinkField.hidden = true;
 
-requireSession().catch(() => {
+requireInviteAccess().catch(() => {
   window.location.href = "login.html";
 });
 
@@ -42,9 +42,9 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
-async function requireSession() {
-  const { user } = await apiRequest("/api/me");
-  if (!user) {
+async function requireInviteAccess() {
+  const { user, canBootstrapInvite } = await apiRequest("/api/me");
+  if (!user && !canBootstrapInvite) {
     window.location.href = "login.html";
     throw new Error("Redirecting to login.");
   }

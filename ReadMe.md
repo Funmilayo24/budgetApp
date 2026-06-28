@@ -114,11 +114,11 @@ Recommended Railway setup:
 1. Create a new Railway project for the budget app.
 1. Add a new Postgres service inside that same project.
 1. Add this repository as a new app service.
-1. Set the budget app service variables:
+1. Set the budget app service variables. `DATABASE_URL` must be set on the `budgetApp` app service, not only on the Postgres service:
 
    ```text
    NODE_ENV=production
-   DATABASE_URL=<the new budget app Postgres DATABASE_URL>
+   DATABASE_URL=${{Postgres.DATABASE_URL}}
    APP_BASE_URL=<the public Railway URL or custom domain for this budget app>
    RESEND_API_KEY=<your Resend API key>
    EMAIL_FROM=<your verified sender>
@@ -129,6 +129,8 @@ Recommended Railway setup:
    RUN_REMINDERS_ON_START=true
    DISABLE_REMINDER_SCHEDULER=false
    ```
+
+   If your Railway Postgres service has a different name, replace `Postgres` in `${{Postgres.DATABASE_URL}}` with the exact service name. Railway's variable editor has autocomplete for references to variables in other services.
 
 The included `railway.json` tells Railway to:
 

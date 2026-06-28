@@ -130,13 +130,15 @@ app.post("/api/invites", async (req, res, next) => {
     });
 
     const inviteUrl = `${getAppBaseUrl()}/accept-invite.html?token=${encodeURIComponent(token)}`;
-    const emailResult = await sendInviteEmail({
+    const emailResult = await sendInviteEmailSafely({
       to: email,
       inviteUrl,
       invitedBy: currentUser
     });
 
-    const shouldReturnInviteUrl = process.env.NODE_ENV !== "production" || process.env.RETURN_INVITE_LINK === "true";
+    const shouldReturnInviteUrl = process.env.NODE_ENV !== "production"
+      || process.env.RETURN_INVITE_LINK === "true"
+      || !emailResult.sent;
 
     res.status(201).json({
       invite: {
@@ -148,7 +150,7 @@ app.post("/api/invites", async (req, res, next) => {
       inviteUrl: shouldReturnInviteUrl ? inviteUrl : undefined,
       message: emailResult.sent
         ? "Invite sent."
-        : "Invite created. Configure RESEND_API_KEY to send email automatically."
+        : `Invite created, but email was not sent. ${emailResult.reason || "Check email settings."}`
     });
   } catch (error) {
     next(error);
@@ -874,6 +876,18 @@ async function findValidInvitation(token) {
       }
     }
   });
+}
+
+async function sendInviteEmailSafely({ to, inviteUrl, invitedBy }) {
+  try {
+    return await sendInviteEmail({ to, inviteUrl, invitedBy });
+  } catch (error) {
+    console.error("Invite email failed.", error);
+    return {
+      sent: false,
+      reason: error.message || "Email provider rejected the invite."
+    };
+  }
 }
 
 function serializeUser(user) {
