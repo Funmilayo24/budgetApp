@@ -18,6 +18,13 @@ form.addEventListener("submit", async (event) => {
         password: formData.get("password")
       })
     });
+
+    const { user } = await apiRequest("/api/me");
+    if (!user) {
+      message.textContent = "Your account was created, but the browser did not keep the login session. Open this app on the same HTTPS URL as the invite link, then log in with your email and password.";
+      return;
+    }
+
     window.location.href = "index.html";
   } catch (error) {
     message.textContent = error.message;

@@ -1,5 +1,6 @@
 const form = document.querySelector("#loginForm");
 const message = document.querySelector("#loginMessage");
+const inviteLink = document.querySelector("#inviteLink");
 
 checkExistingSession();
 
@@ -22,9 +23,16 @@ form.addEventListener("submit", async (event) => {
 });
 
 async function checkExistingSession() {
-  const data = await apiRequest("/api/me", { redirectOnError: false });
-  if (data.user) {
-    window.location.href = "index.html";
+  try {
+    const data = await apiRequest("/api/me");
+    if (data.user) {
+      window.location.href = "index.html";
+      return;
+    }
+
+    inviteLink.hidden = !data.canBootstrapInvite;
+  } catch (_error) {
+    inviteLink.hidden = true;
   }
 }
 
@@ -41,4 +49,3 @@ async function apiRequest(url, options = {}) {
   if (!response.ok) throw new Error(data.error || "Request failed.");
   return data;
 }
-
