@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Accept Invite | Budget App</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="auth-shell">
+      <section class="auth-panel">
+        <p class="eyebrow">Budget App</p>
+        <h1>Create Your Account</h1>
+        <p class="auth-context" id="inviteContext">Checking invite...</p>
+        <form id="acceptInviteForm" class="stacked-form">
+          <label>
+            <span>Name</span>
+            <input name="name" type="text" autocomplete="name" maxlength="80">
+          </label>
+          <label>
+            <span>Password</span>
+            <input name="password" type="password" autocomplete="new-password" minlength="8" required>
+          </label>
+          <button class="primary-button" type="submit">Create Account</button>
+          <p class="form-message" id="acceptInviteMessage" role="status"></p>
+        </form>
+        <a class="auth-link" href="login.html">Already have an account?</a>
+      </section>
+    </main>
+
+    <script src="accept-invite.js"></script>
+  </body>
+</html>
+

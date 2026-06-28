@@ -1,0 +1,28 @@
+{
+  "name": "budget-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A budget tracking app with a local Postgres database and Prisma schema.",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js",
+    "db:up": "docker compose up -d db",
+    "db:down": "docker compose down",
+    "db:reset": "docker compose down -v",
+    "db:logs": "docker compose logs -f db",
+    "prisma:validate": "prisma validate",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "prisma:seed": "prisma db seed"
+  },
+  "devDependencies": {
+    "dotenv": "^16.6.1",
+    "prisma": "^6.19.3"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "express": "^4.19.2",
+    "resend": "^4.0.1"
+  }
+}
