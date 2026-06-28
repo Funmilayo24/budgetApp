@@ -1,6 +1,9 @@
 require("dotenv/config");
 
-const { defineConfig, env } = require("prisma/config");
+const { defineConfig } = require("prisma/config");
+
+const databaseUrl = process.env.DATABASE_URL
+  || "postgresql://budgetapp:budgetapp_dev_password@localhost:5433/budgetapp?schema=public";
 
 module.exports = defineConfig({
   schema: "prisma/schema.prisma",
@@ -9,7 +12,6 @@ module.exports = defineConfig({
     seed: "node prisma/seed.js"
   },
   datasource: {
-    url: env("DATABASE_URL")
+    url: databaseUrl
   }
 });
-

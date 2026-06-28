@@ -138,6 +138,8 @@ The included `railway.json` tells Railway to:
 
 If Railway gives the budget app its own Postgres service, migrations only run on that budget app database.
 
+If the build fails during `npm ci` at `prisma generate`, check that this repo includes the current `prisma.config.js`. It uses a harmless local fallback URL only so Prisma Client can be generated during build. The real Railway database is still controlled by the `DATABASE_URL` variable during pre-deploy migrations and app runtime.
+
 ## Income
 
 Use `income.html` to record income from sources like salary, freelance work, bonuses, or interest. Supported currencies are:
