@@ -1287,6 +1287,21 @@ tbody tr:last-child td {
   text-decoration: underline;
 }
 
+.auth-policy-links {
+  display: flex;
+  gap: 14px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+.auth-policy-links a {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
 .dev-link-field {
   margin-top: 14px;
 }
@@ -1335,6 +1350,100 @@ tbody tr:last-child td {
 .profile-action-link {
   color: var(--ink);
   text-decoration: none;
+}
+
+.profile-privacy-panel,
+.danger-zone {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
+.danger-zone {
+  border-color: rgba(180, 71, 62, 0.28);
+}
+
+.danger-button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 15px;
+  color: #ffffff;
+  background: var(--red);
+  border: 1px solid var(--red);
+  border-radius: var(--radius);
+  font-weight: 900;
+}
+
+.danger-button:hover {
+  background: #963a33;
+  border-color: #963a33;
+}
+
+.danger-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.app-modal-actions {
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.policy-body {
+  background: var(--bg);
+}
+
+.policy-shell {
+  width: min(100% - 32px, 820px);
+  margin: 32px auto;
+}
+
+.policy-header,
+.policy-content {
+  padding: clamp(22px, 5vw, 42px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.policy-header {
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.policy-header h1 {
+  margin: 8px 0;
+}
+
+.policy-content {
+  border-top: 0;
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.policy-content h2 {
+  margin: 28px 0 8px;
+  font-size: 1.16rem;
+}
+
+.policy-content h2:first-child {
+  margin-top: 0;
+}
+
+.policy-content p,
+.policy-content li {
+  line-height: 1.65;
+}
+
+.policy-content a {
+  color: var(--blue);
+  font-weight: 800;
+}
+
+.policy-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 28px;
+  flex-wrap: wrap;
 }
 
 @media (max-width: 920px) {

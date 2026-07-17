@@ -125,9 +125,57 @@
             </div>
             <p class="form-message" id="profileMessage" role="status"></p>
           </div>
+
+          <div class="panel profile-privacy-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Privacy</p>
+                <h2>Your Data</h2>
+              </div>
+            </div>
+            <p class="page-note">Read how Budget App handles your personal and financial information.</p>
+            <div class="profile-actions">
+              <a class="secondary-button profile-action-link" href="privacy.html">Privacy Policy</a>
+              <a class="secondary-button profile-action-link" href="delete-account.html">Account Deletion Help</a>
+            </div>
+          </div>
+
+          <div class="panel danger-zone">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Danger zone</p>
+                <h2>Delete Account</h2>
+              </div>
+            </div>
+            <p class="page-note">Permanently delete your login and the financial records linked to your account. This cannot be undone.</p>
+            <button class="danger-button" id="openDeleteAccountButton" type="button">Delete my account</button>
+          </div>
         </section>
       </main>
     </div>
+
+    <dialog class="app-modal" id="deleteAccountDialog">
+      <form class="app-modal-panel" id="deleteAccountForm">
+        <div class="app-modal-header">
+          <h2>Delete your account?</h2>
+          <button class="icon-button" id="closeDeleteAccountButton" type="button" aria-label="Close">&times;</button>
+        </div>
+        <p class="modal-context">Your account, sessions, income, debts, fixed expenses, savings goals, and related records will be permanently deleted.</p>
+        <label>
+          <span>Current password</span>
+          <input id="deleteAccountPassword" name="password" type="password" autocomplete="current-password" required>
+        </label>
+        <label>
+          <span>Type DELETE to confirm</span>
+          <input id="deleteAccountConfirmation" name="confirmation" type="text" autocomplete="off" pattern="DELETE" required>
+        </label>
+        <p class="form-message" id="deleteAccountMessage" role="status"></p>
+        <div class="app-modal-actions">
+          <button class="secondary-button" id="cancelDeleteAccountButton" type="button">Cancel</button>
+          <button class="danger-button" id="confirmDeleteAccountButton" type="submit">Delete permanently</button>
+        </div>
+      </form>
+    </dialog>
 
     <script src="profile.js"></script>
   </body>

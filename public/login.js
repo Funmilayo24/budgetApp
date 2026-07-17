@@ -2,6 +2,11 @@ const form = document.querySelector("#loginForm");
 const message = document.querySelector("#loginMessage");
 const inviteLink = document.querySelector("#inviteLink");
 
+if (new URLSearchParams(window.location.search).get("accountDeleted") === "1") {
+  message.textContent = "Your account and linked data were permanently deleted.";
+  window.history.replaceState({}, document.title, window.location.pathname);
+}
+
 checkExistingSession();
 
 form.addEventListener("submit", async (event) => {

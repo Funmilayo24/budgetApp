@@ -95,6 +95,54 @@ app.post("/api/logout", async (req, res, next) => {
   }
 });
 
+app.delete("/api/account", requireUser, async (req, res, next) => {
+  try {
+    const password = String(req.body.password || "");
+    const confirmation = String(req.body.confirmation || "").trim().toUpperCase();
+
+    if (!password) {
+      res.status(400).json({ error: "Enter your password to delete your account." });
+      return;
+    }
+
+    if (confirmation !== "DELETE") {
+      res.status(400).json({ error: "Type DELETE to confirm account deletion." });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    const passwordMatches = user ? await verifyPassword(password, user.passwordHash) : false;
+
+    if (!user || !passwordMatches) {
+      res.status(403).json({ error: "The password you entered is incorrect." });
+      return;
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // Invitations use SetNull relations and can otherwise retain the deleted
+      // user's email address or tokens after the account itself is removed.
+      await tx.invitation.deleteMany({
+        where: {
+          OR: [
+            { email: user.email },
+            { invitedById: user.id },
+            { acceptedById: user.id }
+          ]
+        }
+      });
+
+      // User-owned financial records and sessions are removed by the Cascade
+      // relations defined in the Prisma schema.
+      await tx.user.delete({ where: { id: user.id } });
+    });
+
+    await clearSession(req, res);
+    res.json({ ok: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.post("/api/invites", async (req, res, next) => {
   try {
     const email = normalizeEmail(req.body.email);

@@ -176,6 +176,17 @@ To publish on Google Play:
 1. Upload the `.aab` in Google Play Console.
 1. Complete the store listing, screenshots, content rating, privacy policy, and Data safety form.
 
+Before submission, confirm that `privacy@funmilayotobun.com` is an active,
+monitored mailbox. The public Play Console URLs are:
+
+```text
+https://<your-production-domain>/privacy.html
+https://<your-production-domain>/delete-account.html
+```
+
+Users can also delete their account directly from Profile. Account deletion
+requires their current password and an explicit `DELETE` confirmation.
+
 The Android app id is:
 
 ```text
