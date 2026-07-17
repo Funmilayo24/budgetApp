@@ -51,7 +51,14 @@ if (process.env.NODE_ENV === "production") {
 }
 
 app.use(express.json());
-app.use(express.static(publicDir, { extensions: ["html"] }));
+app.use(express.static(publicDir, {
+  extensions: ["html"],
+  setHeaders(res, filePath) {
+    if (/\.(?:html|js|css)$/i.test(filePath)) {
+      res.setHeader("Cache-Control", "no-cache, must-revalidate");
+    }
+  }
+}));
 app.use("/api", debtRoutes);
 
 app.get("/api/health", async (_req, res, next) => {

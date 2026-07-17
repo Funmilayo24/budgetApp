@@ -273,7 +273,9 @@ function openPaymentModal(debtId) {
   if (!debt || !isSelectedMonthEditable()) return;
 
   const plannedRemaining = Math.max(0, Number(debt.plan?.amount || 0) - Number(debt.actualPaidThisMonth || 0));
-  const suggestedAmount = Math.min(debt.currentBalance, plannedRemaining);
+  const suggestedAmount = plannedRemaining > 0
+    ? Math.min(debt.currentBalance, plannedRemaining)
+    : debt.currentBalance;
 
   elements.paymentForm.reset();
   clearMessage(elements.paymentMessage);
