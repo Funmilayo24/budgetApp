@@ -344,6 +344,69 @@ body.dashboard-body {
   color: var(--ink);
 }
 
+.amount-left-hero {
+  display: grid;
+  gap: 4px;
+  padding: 16px;
+  color: var(--green);
+  background: var(--green-soft);
+  border: 1px solid rgba(22, 121, 79, 0.18);
+  border-radius: var(--radius);
+}
+
+.amount-left-hero.is-negative {
+  color: var(--red);
+  background: var(--red-soft);
+  border-color: rgba(180, 71, 62, 0.18);
+}
+
+.amount-left-hero span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.amount-left-hero strong {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  overflow-wrap: anywhere;
+}
+
+.amount-left-breakdown {
+  display: grid;
+  gap: 7px;
+}
+
+.amount-left-breakdown > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 7px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.amount-left-breakdown > span:last-child {
+  border-bottom: 0;
+}
+
+.amount-left-breakdown strong {
+  color: var(--ink);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.cycle-budget-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 * {
   box-sizing: border-box;
 }

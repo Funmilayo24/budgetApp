@@ -63,7 +63,12 @@ function renderDashboard({ income, debtPlanning, transactions, budgets }) {
   renderDebtChart(debtPlanning);
   renderActiveDebts(debtPlanning.debts || []);
   renderRecentActivity(income.entries || [], transactions.transactions || [], debtPlanning.debts || []);
-  renderCycleBudget(transactions.transactions || [], budgets.budgets || [], income.totals || {});
+  renderCycleBudget(
+    transactions.transactions || [],
+    budgets.budgets || [],
+    income.totals || {},
+    debtPlanning.summary || {}
+  );
 }
 
 function renderGlanceCards(income, debtPlanning) {
@@ -186,9 +191,11 @@ function renderRecentActivity(incomeEntries, transactions, debts) {
   `).join("");
 }
 
-function renderCycleBudget(transactions, budgets, incomeTotals) {
+function renderCycleBudget(transactions, budgets, incomeTotals, debtSummary) {
   const incomeByCurrency = { ...incomeTotals };
-  const expensesByCurrency = {};
+  const fixedExpensesByCurrency = {};
+  const otherSpendingByCurrency = {};
+  const debtPaymentsByCurrency = { ...(debtSummary.debtActuallyPaidByCurrency || {}) };
   const budgetByCurrency = {};
 
   transactions.forEach((transaction) => {
@@ -196,7 +203,11 @@ function renderCycleBudget(transactions, budgets, incomeTotals) {
     if (transaction.type === "income") {
       addToCurrencyTotals(incomeByCurrency, currency, transaction.amount);
     } else if (transaction.type === "expense") {
-      addToCurrencyTotals(expensesByCurrency, currency, transaction.amount);
+      addToCurrencyTotals(
+        transaction.isFixedExpense ? fixedExpensesByCurrency : otherSpendingByCurrency,
+        currency,
+        transaction.amount
+      );
     }
   });
 
@@ -204,9 +215,18 @@ function renderCycleBudget(transactions, budgets, incomeTotals) {
     addToCurrencyTotals(budgetByCurrency, "USD", budget.amount);
   });
 
-  const remainingByCurrency = subtractCurrencyTotals(incomeByCurrency, expensesByCurrency);
+  const totalOutgoingsByCurrency = mergeCurrencyTotals(
+    fixedExpensesByCurrency,
+    otherSpendingByCurrency,
+    debtPaymentsByCurrency
+  );
+  const remainingByCurrency = subtractCurrencyTotals(incomeByCurrency, totalOutgoingsByCurrency);
+  const displayCurrencies = [...new Set([
+    ...Object.keys(incomeByCurrency),
+    ...Object.keys(totalOutgoingsByCurrency)
+  ])];
 
-  if (!hasTotals(incomeByCurrency) && !hasTotals(budgetByCurrency)) {
+  if (!hasTotals(incomeByCurrency)) {
     elements.cycleBudget.innerHTML = `
       <div class="friendly-empty compact-empty">
         <a href="income.html">Add an income source</a>
@@ -217,12 +237,17 @@ function renderCycleBudget(transactions, budgets, incomeTotals) {
   }
 
   elements.cycleBudget.innerHTML = `
-    <div class="budget-pill-row">
-      <span>Income <strong>${formatTotals(incomeByCurrency)}</strong></span>
-      <span>Expenses <strong>${formatTotals(expensesByCurrency)}</strong></span>
-      <span>Budgeted <strong>${formatTotals(budgetByCurrency)}</strong></span>
-      <span>Left <strong>${formatTotals(remainingByCurrency)}</strong></span>
+    <div class="amount-left-hero${hasNegativeTotals(remainingByCurrency) ? " is-negative" : ""}">
+      <span>Available after spending and debt</span>
+      <strong>${formatTotals(remainingByCurrency)}</strong>
     </div>
+    <div class="amount-left-breakdown">
+      <span>Monthly income <strong>${formatBreakdownTotals(incomeByCurrency, displayCurrencies)}</strong></span>
+      <span>Fixed expenses <strong>−${formatBreakdownTotals(fixedExpensesByCurrency, displayCurrencies)}</strong></span>
+      <span>Other spending <strong>−${formatBreakdownTotals(otherSpendingByCurrency, displayCurrencies)}</strong></span>
+      <span>Debt payments made <strong>−${formatBreakdownTotals(debtPaymentsByCurrency, displayCurrencies)}</strong></span>
+    </div>
+    ${hasTotals(budgetByCurrency) ? `<p class="cycle-budget-note">Budget targets: ${formatTotals(budgetByCurrency)}</p>` : ""}
   `;
 }
 
@@ -268,6 +293,26 @@ function subtractCurrencyTotals(incomeTotals = {}, expenseTotals = {}) {
     totals[currency] = Number(incomeTotals[currency] || 0) - Number(expenseTotals[currency] || 0);
     return totals;
   }, {});
+}
+
+function mergeCurrencyTotals(...groups) {
+  return groups.reduce((combined, totals) => {
+    Object.entries(totals || {}).forEach(([currency, amount]) => {
+      addToCurrencyTotals(combined, currency, amount);
+    });
+    return combined;
+  }, {});
+}
+
+function hasNegativeTotals(totals = {}) {
+  return Object.values(totals).some((amount) => Number(amount) < 0);
+}
+
+function formatBreakdownTotals(totals = {}, currencies = []) {
+  const displayCurrencies = currencies.length ? currencies : ["USD"];
+  return displayCurrencies
+    .map((currency) => formatCurrency(Number(totals[currency] || 0), currency))
+    .join(" / ");
 }
 
 function formatTotals(totals = {}) {
