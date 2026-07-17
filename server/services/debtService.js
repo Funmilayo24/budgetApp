@@ -61,8 +61,8 @@ async function listPlanning(userId, monthValue) {
     categories: debtCategories,
     currencies: [...allowedCurrencies],
     summary: buildPlanningSummary(debts),
-    debts: debts.filter((debt) => debt.status === "ACTIVE").map(serializeDebtForPlanning),
-    completedDebts: debts.filter((debt) => debt.status === "PAID").map(serializeDebtForPlanning)
+    debts: debts.filter((debt) => !isDebtPaidOff(debt)).map(serializeDebtForPlanning),
+    completedDebts: debts.filter(isDebtPaidOff).map(serializeDebtForPlanning)
   };
 }
 
@@ -324,7 +324,7 @@ async function getOrCreateSalaryCycle(userId, month) {
 }
 
 function buildPlanningSummary(debts) {
-  const activeDebts = debts.filter((debt) => debt.status === "ACTIVE");
+  const activeDebts = debts.filter((debt) => !isDebtPaidOff(debt));
 
   return debts.reduce((summary, debt) => {
     const plan = debt.paymentPlans[0];
@@ -379,7 +379,7 @@ function serializeDebt(debt) {
     minimumPayment: debt.minimumPayment === null ? null : Number(debt.minimumPayment),
     dueDay: debt.dueDay,
     notes: debt.notes,
-    status: debt.status,
+    status: isDebtPaidOff(debt) ? "PAID" : debt.status,
     paidAt: debt.paidAt
   };
 }
@@ -457,6 +457,10 @@ function toDateValue(date) {
 
 function roundCurrency(value) {
   return Math.round(Number(value) * 100) / 100;
+}
+
+function isDebtPaidOff(debt) {
+  return roundCurrency(debt.currentBalance) <= 0;
 }
 
 function validationError(message) {

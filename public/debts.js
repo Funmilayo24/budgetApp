@@ -466,7 +466,8 @@ function formatCurrency(amount, currency) {
   return new Intl.NumberFormat(meta.locale, {
     style: "currency",
     currency: meta.currency,
-    maximumFractionDigits: 0
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
   }).format(amount);
 }
 
