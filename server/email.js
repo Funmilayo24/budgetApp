@@ -21,7 +21,7 @@ async function sendInviteEmail({ to, inviteUrl, invitedBy }) {
     html: `
       <div style="font-family: Arial, sans-serif; color: #19212a; line-height: 1.5;">
         <h1 style="font-size: 22px;">You are invited to Budget App</h1>
-        <p>${escapeHtml(inviter)} invited you to join their budget workspace.</p>
+        <p>${escapeHtml(inviter)} invited you to create your own private Budget App account.</p>
         <p>
           <a href="${inviteUrl}" style="display: inline-block; padding: 10px 14px; background: #16794f; color: #ffffff; text-decoration: none; border-radius: 8px;">
             Accept invite

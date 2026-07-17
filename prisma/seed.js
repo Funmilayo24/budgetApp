@@ -56,28 +56,33 @@ async function main() {
   const currentMonth = new Date();
   currentMonth.setDate(1);
   currentMonth.setHours(0, 0, 0, 0);
+  const users = await prisma.user.findMany({ select: { id: true } });
 
-  for (const [name, amount] of Object.entries(defaultBudgets)) {
-    const category = await prisma.category.findUnique({
-      where: { name_kind: { name, kind: "EXPENSE" } }
-    });
+  for (const user of users) {
+    for (const [name, amount] of Object.entries(defaultBudgets)) {
+      const category = await prisma.category.findUnique({
+        where: { name_kind: { name, kind: "EXPENSE" } }
+      });
 
-    if (!category) continue;
+      if (!category) continue;
 
-    await prisma.monthlyBudget.upsert({
-      where: {
-        categoryId_month: {
+      await prisma.monthlyBudget.upsert({
+        where: {
+          userId_categoryId_month: {
+            userId: user.id,
+            categoryId: category.id,
+            month: currentMonth
+          }
+        },
+        update: { amount },
+        create: {
+          userId: user.id,
           categoryId: category.id,
-          month: currentMonth
+          month: currentMonth,
+          amount
         }
-      },
-      update: { amount },
-      create: {
-        categoryId: category.id,
-        month: currentMonth,
-        amount
-      }
-    });
+      });
+    }
   }
 }
 
@@ -90,4 +95,3 @@ main()
     await prisma.$disconnect();
     process.exit(1);
   });
-

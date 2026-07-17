@@ -1302,6 +1302,24 @@ tbody tr:last-child td {
   font-weight: 800;
 }
 
+.checkbox-field {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+}
+
+.checkbox-field input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+}
+
+.checkbox-field a {
+  color: var(--blue);
+  font-weight: 800;
+}
+
 .dev-link-field {
   margin-top: 14px;
 }

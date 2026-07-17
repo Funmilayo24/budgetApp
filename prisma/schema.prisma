@@ -77,6 +77,8 @@ model Category {
 
 model Transaction {
   id          String          @id @default(cuid())
+  userId      String?
+  user        User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
   type        TransactionType
   date        DateTime        @db.Date
   amount      Decimal         @db.Decimal(12, 2)
@@ -89,10 +91,13 @@ model Transaction {
   @@index([date])
   @@index([type])
   @@index([categoryId])
+  @@index([userId, date])
 }
 
 model MonthlyBudget {
   id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   month      DateTime @db.Date
   amount     Decimal  @db.Decimal(12, 2)
   categoryId String
@@ -100,8 +105,8 @@ model MonthlyBudget {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  @@unique([categoryId, month])
-  @@index([month])
+  @@unique([userId, categoryId, month])
+  @@index([userId, month])
 }
 
 model FixedExpense {
@@ -141,6 +146,8 @@ model User {
   reminderEmails  ReminderEmail[]
   fixedExpenses   FixedExpense[]
   savingsGoals    SavingsGoal[]
+  transactions    Transaction[]
+  monthlyBudgets  MonthlyBudget[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 }

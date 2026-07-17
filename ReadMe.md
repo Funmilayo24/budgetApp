@@ -1,10 +1,10 @@
 # Budget App
 
-A small full-stack budget tracker with Postgres, Prisma, invite-based signup, and session login.
+A small full-stack budget tracker with Postgres, Prisma, private user accounts, and session login.
 
 ## Features
 
-- Invite people by email with Resend
+- Create a private account directly or invite people by email with Resend
 - Accept invite links and create a password
 - Log in with an HTTP-only session cookie
 - Record income by source, amount, date, and currency

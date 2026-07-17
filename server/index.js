@@ -33,6 +33,18 @@ const allowedIncomeFrequencies = new Set([
   "QUARTERLY",
   "ANNUAL"
 ]);
+const defaultBudgetAmounts = {
+  Housing: 1200,
+  Food: 500,
+  Transport: 180,
+  Utilities: 260,
+  Health: 120,
+  Shopping: 200,
+  Entertainment: 150,
+  Savings: 300,
+  Debt: 0,
+  Other: 100
+};
 
 if (process.env.NODE_ENV === "production") {
   app.set("trust proxy", 1);
@@ -57,6 +69,69 @@ app.get("/api/me", async (req, res, next) => {
     const userCount = await prisma.user.count();
     res.json({ user, canBootstrapInvite: userCount === 0 });
   } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/register", async (req, res, next) => {
+  try {
+    const name = String(req.body.name || "").trim();
+    const email = normalizeEmail(req.body.email);
+    const password = String(req.body.password || "");
+    const acceptedPrivacyPolicy = req.body.acceptedPrivacyPolicy === true;
+
+    if (!name || name.length > 80) {
+      res.status(400).json({ error: "Enter your name." });
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      res.status(400).json({ error: "Enter a valid email address." });
+      return;
+    }
+
+    if (password.length < 8) {
+      res.status(400).json({ error: "Password must be at least 8 characters." });
+      return;
+    }
+
+    if (!acceptedPrivacyPolicy) {
+      res.status(400).json({ error: "Accept the Privacy Policy to create an account." });
+      return;
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      res.status(409).json({ error: "An account with that email already exists." });
+      return;
+    }
+
+    const [userCount, passwordHash] = await Promise.all([
+      prisma.user.count(),
+      hashPassword(password)
+    ]);
+
+    const user = await prisma.$transaction(async (tx) => {
+      const createdUser = await tx.user.create({
+        data: {
+          name,
+          email,
+          passwordHash,
+          role: userCount === 0 ? "OWNER" : "MEMBER"
+        }
+      });
+
+      await createDefaultBudgetsForUser(tx, createdUser.id);
+      return createdUser;
+    });
+
+    await createSession(res, user.id);
+    res.status(201).json({ user: serializeUser(user) });
+  } catch (error) {
+    if (error.code === "P2002") {
+      res.status(409).json({ error: "An account with that email already exists." });
+      return;
+    }
     next(error);
   }
 });
@@ -260,6 +335,8 @@ app.post("/api/invites/:token/accept", async (req, res, next) => {
         }
       });
 
+      await createDefaultBudgetsForUser(tx, createdUser.id);
+
       await tx.invitation.update({
         where: { id: invitation.id },
         data: {
@@ -298,6 +375,7 @@ app.get("/api/transactions", requireUser, async (req, res, next) => {
     const [transactions, fixedExpenseOccurrences] = await Promise.all([
       prisma.transaction.findMany({
         where: {
+          userId: req.user.id,
           date: {
             gte: start,
             lt: end
@@ -341,6 +419,7 @@ app.post("/api/transactions", requireUser, async (req, res, next) => {
 
     const transaction = await prisma.transaction.create({
       data: {
+        userId: req.user.id,
         type,
         date,
         amount: roundCurrency(amount),
@@ -358,7 +437,16 @@ app.post("/api/transactions", requireUser, async (req, res, next) => {
 
 app.delete("/api/transactions/:id", requireUser, async (req, res, next) => {
   try {
-    await prisma.transaction.delete({ where: { id: req.params.id } });
+    const transaction = await prisma.transaction.findFirst({
+      where: { id: req.params.id, userId: req.user.id }
+    });
+
+    if (!transaction) {
+      res.status(404).json({ error: "Transaction not found." });
+      return;
+    }
+
+    await prisma.transaction.delete({ where: { id: transaction.id } });
     res.json({ ok: true });
   } catch (error) {
     if (error.code === "P2025") {
@@ -374,7 +462,7 @@ app.get("/api/budgets", requireUser, async (req, res, next) => {
     const month = getMonthParam(req.query.month);
     const monthDate = parseMonth(month);
     const budgets = await prisma.monthlyBudget.findMany({
-      where: { month: monthDate },
+      where: { userId: req.user.id, month: monthDate },
       include: { category: true },
       orderBy: { category: { name: "asc" } }
     });
@@ -405,13 +493,15 @@ app.put("/api/budgets", requireUser, async (req, res, next) => {
 
     const budget = await prisma.monthlyBudget.upsert({
       where: {
-        categoryId_month: {
+        userId_categoryId_month: {
+          userId: req.user.id,
           categoryId,
           month: monthDate
         }
       },
       update: { amount: roundCurrency(amount) },
       create: {
+        userId: req.user.id,
         categoryId,
         month: monthDate,
         amount: roundCurrency(amount)
@@ -1339,4 +1429,28 @@ function toDateValue(date) {
 
 function roundCurrency(value) {
   return Math.round(value * 100) / 100;
+}
+
+async function createDefaultBudgetsForUser(tx, userId) {
+  const categories = await tx.category.findMany({
+    where: {
+      kind: "EXPENSE",
+      name: { in: Object.keys(defaultBudgetAmounts) }
+    },
+    select: { id: true, name: true }
+  });
+  const now = new Date();
+  const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+
+  if (!categories.length) return;
+
+  await tx.monthlyBudget.createMany({
+    data: categories.map((category) => ({
+      userId,
+      categoryId: category.id,
+      month,
+      amount: defaultBudgetAmounts[category.name]
+    })),
+    skipDuplicates: true
+  });
 }
