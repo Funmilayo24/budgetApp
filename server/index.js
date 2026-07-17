@@ -769,15 +769,25 @@ app.post("/api/savings-goals/:id/contributions", requireUser, async (req, res, n
     const amount = Number(req.body.amount);
     const savedOn = parseDate(req.body.savedOn);
     const note = String(req.body.note || "").trim();
+    const type = parseSavingsEntryType(req.body.type);
 
-    if (!Number.isFinite(amount) || amount <= 0 || !savedOn) {
-      res.status(400).json({ error: "Enter a valid saved amount and date." });
+    if (!Number.isFinite(amount) || amount <= 0 || !savedOn || !type) {
+      res.status(400).json({ error: "Enter a valid amount, activity type, and date." });
       return;
+    }
+
+    if (type === "WITHDRAWAL") {
+      const availableBalance = await getSavingsGoalBalance(goal.id);
+      if (amount > availableBalance) {
+        res.status(400).json({ error: `You only have ${availableBalance.toFixed(2)} available in this goal.` });
+        return;
+      }
     }
 
     const contribution = await prisma.savingsContribution.create({
       data: {
         savingsGoalId: goal.id,
+        type,
         amount: roundCurrency(amount),
         savedOn,
         note: note || null
@@ -787,6 +797,94 @@ app.post("/api/savings-goals/:id/contributions", requireUser, async (req, res, n
     res.status(201).json({
       contribution: serializeSavingsContribution(contribution, goal)
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.put("/api/savings-contributions/:id", requireUser, async (req, res, next) => {
+  try {
+    const existingEntry = await prisma.savingsContribution.findFirst({
+      where: {
+        id: req.params.id,
+        savingsGoal: { userId: req.user.id, archivedAt: null }
+      },
+      include: { savingsGoal: true }
+    });
+
+    if (!existingEntry) {
+      res.status(404).json({ error: "Savings activity not found." });
+      return;
+    }
+
+    const goalId = String(req.body.goalId || existingEntry.savingsGoalId);
+    const goal = await prisma.savingsGoal.findFirst({
+      where: { id: goalId, userId: req.user.id, archivedAt: null }
+    });
+    const amount = Number(req.body.amount);
+    const savedOn = parseDate(req.body.savedOn);
+    const note = String(req.body.note || "").trim();
+    const type = parseSavingsEntryType(req.body.type);
+
+    if (!goal || !Number.isFinite(amount) || amount <= 0 || !savedOn || !type) {
+      res.status(400).json({ error: "Enter a valid goal, amount, activity type, and date." });
+      return;
+    }
+
+    const sourceBalanceWithoutEntry = await getSavingsGoalBalance(existingEntry.savingsGoalId, existingEntry.id);
+    if (sourceBalanceWithoutEntry < 0) {
+      res.status(400).json({ error: "This deposit cannot be changed because later withdrawals depend on it." });
+      return;
+    }
+
+    const targetBalanceWithoutEntry = goal.id === existingEntry.savingsGoalId
+      ? sourceBalanceWithoutEntry
+      : await getSavingsGoalBalance(goal.id);
+    const resultingTargetBalance = roundCurrency(targetBalanceWithoutEntry + (type === "WITHDRAWAL" ? -amount : amount));
+    if (resultingTargetBalance < 0) {
+      res.status(400).json({ error: `You only have ${targetBalanceWithoutEntry.toFixed(2)} available in this goal.` });
+      return;
+    }
+
+    const entry = await prisma.savingsContribution.update({
+      where: { id: existingEntry.id },
+      data: {
+        savingsGoalId: goal.id,
+        type,
+        amount: roundCurrency(amount),
+        savedOn,
+        note: note || null
+      }
+    });
+
+    res.json({ contribution: serializeSavingsContribution(entry, goal) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete("/api/savings-contributions/:id", requireUser, async (req, res, next) => {
+  try {
+    const entry = await prisma.savingsContribution.findFirst({
+      where: {
+        id: req.params.id,
+        savingsGoal: { userId: req.user.id, archivedAt: null }
+      }
+    });
+
+    if (!entry) {
+      res.status(404).json({ error: "Savings activity not found." });
+      return;
+    }
+
+    const balanceWithoutEntry = await getSavingsGoalBalance(entry.savingsGoalId, entry.id);
+    if (balanceWithoutEntry < 0) {
+      res.status(400).json({ error: "This deposit cannot be deleted because later withdrawals depend on it." });
+      return;
+    }
+
+    await prisma.savingsContribution.delete({ where: { id: entry.id } });
+    res.json({ ok: true });
   } catch (error) {
     next(error);
   }
@@ -1131,7 +1229,10 @@ function serializeFixedExpenseOccurrence(fixedExpense, month) {
 
 function serializeSavingsGoal(goal) {
   const contributions = goal.contributions || [];
-  const savedAmount = roundCurrency(contributions.reduce((total, contribution) => total + Number(contribution.amount), 0));
+  const savedAmount = roundCurrency(contributions.reduce((total, contribution) => {
+    const amount = Number(contribution.amount);
+    return total + (contribution.type === "WITHDRAWAL" ? -amount : amount);
+  }, 0));
   const targetAmount = Number(goal.targetAmount);
   const remainingAmount = roundCurrency(Math.max(0, targetAmount - savedAmount));
   const percentSaved = targetAmount > 0 ? Math.min(100, Math.round((savedAmount / targetAmount) * 100)) : 0;
@@ -1157,11 +1258,15 @@ function serializeSavingsGoal(goal) {
 }
 
 function serializeSavingsContribution(contribution, goal) {
+  const type = contribution.type || "DEPOSIT";
+  const amount = Number(contribution.amount);
   return {
     id: contribution.id,
     savingsGoalId: goal.id,
     goalName: goal.name,
-    amount: Number(contribution.amount),
+    type,
+    amount,
+    signedAmount: type === "WITHDRAWAL" ? -amount : amount,
     currency: goal.currency,
     savedOn: toDateValue(contribution.savedOn),
     note: contribution.note,
@@ -1346,7 +1451,9 @@ function getSavingsTotals(goals, monthlyContributions) {
     targetByCurrency: {},
     savedByCurrency: {},
     remainingByCurrency: {},
-    savedThisMonthByCurrency: {}
+    savedThisMonthByCurrency: {},
+    addedThisMonthByCurrency: {},
+    withdrawnThisMonthByCurrency: {}
   };
 
   goals.forEach((goal) => {
@@ -1356,10 +1463,35 @@ function getSavingsTotals(goals, monthlyContributions) {
   });
 
   monthlyContributions.forEach((contribution) => {
-    addCurrencyTotal(totals.savedThisMonthByCurrency, contribution.currency, contribution.amount);
+    addCurrencyTotal(totals.savedThisMonthByCurrency, contribution.currency, contribution.signedAmount);
+    if (contribution.type === "WITHDRAWAL") {
+      addCurrencyTotal(totals.withdrawnThisMonthByCurrency, contribution.currency, contribution.amount);
+    } else {
+      addCurrencyTotal(totals.addedThisMonthByCurrency, contribution.currency, contribution.amount);
+    }
   });
 
   return totals;
+}
+
+function parseSavingsEntryType(value) {
+  const type = String(value || "DEPOSIT").toUpperCase();
+  return ["DEPOSIT", "WITHDRAWAL"].includes(type) ? type : null;
+}
+
+async function getSavingsGoalBalance(goalId, excludedEntryId = null) {
+  const entries = await prisma.savingsContribution.findMany({
+    where: {
+      savingsGoalId: goalId,
+      ...(excludedEntryId ? { id: { not: excludedEntryId } } : {})
+    },
+    select: { type: true, amount: true }
+  });
+
+  return roundCurrency(entries.reduce((balance, entry) => {
+    const amount = Number(entry.amount);
+    return balance + (entry.type === "WITHDRAWAL" ? -amount : amount);
+  }, 0));
 }
 
 function addCurrencyTotal(totals, currency, amount) {

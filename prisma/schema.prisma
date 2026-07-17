@@ -76,6 +76,11 @@ enum GoalFundingStrategy {
   CUSTOM_TARGET
 }
 
+enum SavingsEntryType {
+  DEPOSIT
+  WITHDRAWAL
+}
+
 model Category {
   id             String          @id @default(cuid())
   name           String          @db.VarChar(60)
@@ -364,6 +369,7 @@ model SavingsContribution {
   id            String      @id @default(cuid())
   savingsGoalId String
   savingsGoal   SavingsGoal @relation(fields: [savingsGoalId], references: [id], onDelete: Cascade)
+  type          SavingsEntryType @default(DEPOSIT)
   amount        Decimal     @db.Decimal(12, 2)
   savedOn       DateTime    @db.Date
   note          String?     @db.VarChar(160)

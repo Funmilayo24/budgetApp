@@ -1655,6 +1655,58 @@ tbody tr:last-child td {
   color: var(--ink);
 }
 
+.savings-balance-list {
+  display: grid;
+  gap: 8px;
+}
+
+.savings-balance-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.savings-balance-row div {
+  display: grid;
+  min-width: 0;
+}
+
+.savings-balance-row strong {
+  overflow-wrap: anywhere;
+}
+
+.savings-balance-row small {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.savings-balance-row > span {
+  color: var(--green);
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.savings-future-link {
+  margin-top: 14px;
+}
+
+.savings-activity-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.savings-activity-actions .icon-text-button {
+  min-height: 34px;
+  padding: 0 10px;
+}
+
 @media (max-width: 920px) {
   .dashboard-layout {
     grid-template-columns: 1fr;
@@ -1950,6 +2002,15 @@ tbody tr:last-child td {
   .future-goal-footer {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .savings-balance-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .savings-balance-row > span {
+    white-space: normal;
   }
 
   .future-goal-card-head .secondary-button,

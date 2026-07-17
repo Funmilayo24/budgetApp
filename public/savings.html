@@ -108,16 +108,19 @@
         <header class="dashboard-header">
           <div>
             <h1>Savings</h1>
-            <p>Set a target, pick a deadline, and track each amount saved.</p>
+            <p>Track every amount you save and every amount you use.</p>
           </div>
           <div class="dashboard-actions">
             <label class="month-field">
               <svg class="icon" aria-hidden="true"><use href="#icon-calendar"></use></svg>
               <input id="monthPicker" type="month" aria-label="Selected month">
             </label>
-            <button class="primary-button" id="openGoalModalButton" type="button">
+            <button class="secondary-button" id="openWithdrawalModalButton" type="button">
+              Money Used
+            </button>
+            <button class="primary-button" id="openDepositModalButton" type="button">
               <svg class="icon" aria-hidden="true"><use href="#icon-plus"></use></svg>
-              New Goal
+              Add Savings
             </button>
           </div>
         </header>
@@ -125,21 +128,21 @@
         <p class="form-message page-message" id="savingsPageMessage" role="status"></p>
 
         <section class="summary-grid" aria-label="Savings summary">
-          <article class="metric metric-income">
-            <p>Goals</p>
-            <strong id="goalCount">0</strong>
-          </article>
           <article class="metric metric-remaining">
-            <p>Saved</p>
+            <p>Current Savings</p>
             <strong id="savedTotal">$0</strong>
           </article>
-          <article class="metric metric-rate">
-            <p>Target</p>
-            <strong id="targetTotal">$0</strong>
+          <article class="metric metric-income">
+            <p>Added This Month</p>
+            <strong id="addedTotal">$0</strong>
           </article>
           <article class="metric metric-spent">
-            <p>This Month</p>
-            <strong id="monthlySavedTotal">$0</strong>
+            <p>Used This Month</p>
+            <strong id="withdrawnTotal">$0</strong>
+          </article>
+          <article class="metric metric-rate">
+            <p>Net Change</p>
+            <strong id="netChangeTotal">$0</strong>
           </article>
         </section>
 
@@ -147,19 +150,20 @@
           <div class="panel">
             <div class="panel-heading">
               <div>
-                <p class="eyebrow">Goals</p>
-                <h2>Savings Goals</h2>
+                <p class="eyebrow">Balances</p>
+                <h2>Saved by Goal</h2>
               </div>
             </div>
-            <div class="income-source-list savings-goal-list" id="savingsGoalList"></div>
-            <p class="empty-state" id="savingsGoalEmptyState">No savings goals yet.</p>
+            <div class="savings-balance-list" id="savingsBalanceList"></div>
+            <p class="empty-state" id="savingsBalanceEmptyState">Create a goal on Future Goals before adding savings.</p>
+            <a class="secondary-button profile-action-link savings-future-link" href="future-goals.html">Manage Future Goals</a>
           </div>
 
           <div class="panel">
             <div class="panel-heading">
               <div>
-                <p class="eyebrow">History</p>
-                <h2>Saved This Month</h2>
+                <p class="eyebrow">Activity</p>
+                <h2>Savings Activity This Month</h2>
               </div>
             </div>
             <div class="table-wrap">
@@ -167,89 +171,50 @@
                 <thead>
                   <tr>
                     <th>Date</th>
+                    <th>Type</th>
                     <th>Goal</th>
                     <th>Note</th>
                     <th class="amount-column">Amount</th>
+                    <th></th>
                   </tr>
                 </thead>
-                <tbody id="savingsContributionTable"></tbody>
+                <tbody id="savingsActivityTable"></tbody>
               </table>
             </div>
-            <p class="empty-state" id="savingsContributionEmptyState">No savings recorded for this month.</p>
+            <p class="empty-state" id="savingsActivityEmptyState">No savings activity for this month.</p>
           </div>
         </section>
       </main>
     </div>
 
-    <dialog class="app-modal" id="goalModal" aria-labelledby="goalModalTitle">
-      <form id="goalForm" class="app-modal-panel stacked-form">
+    <dialog class="app-modal" id="savingsActivityModal" aria-labelledby="savingsActivityModalTitle">
+      <form id="savingsActivityForm" class="app-modal-panel stacked-form">
         <div class="app-modal-header">
-          <h2 id="goalModalTitle">New Savings Goal</h2>
-          <button class="icon-button" id="closeGoalModalButton" type="button" aria-label="Close savings goal form">
+          <div>
+            <p class="eyebrow" id="savingsActivityEyebrow">Savings activity</p>
+            <h2 id="savingsActivityModalTitle">Add Savings</h2>
+          </div>
+          <button class="icon-button" id="closeSavingsActivityModalButton" type="button" aria-label="Close savings activity form">
             <svg class="icon" aria-hidden="true"><use href="#icon-x"></use></svg>
           </button>
         </div>
 
-        <input id="goalIdInput" name="id" type="hidden">
+        <input id="savingsActivityIdInput" name="id" type="hidden">
+        <input id="savingsActivityTypeInput" name="type" type="hidden" value="DEPOSIT">
 
         <label>
-          <span>Goal</span>
-          <input id="goalNameInput" name="name" type="text" maxlength="100" placeholder="Emergency fund, holiday, house deposit" required>
+          <span>Future goal</span>
+          <select id="savingsActivityGoalInput" name="goalId" required></select>
         </label>
 
         <div class="field-pair">
           <label>
-            <span>Target Amount</span>
-            <input name="targetAmount" type="number" min="0.01" step="0.01" placeholder="0.00" required>
+            <span id="savingsActivityAmountLabel">Amount saved</span>
+            <input id="savingsActivityAmountInput" name="amount" type="number" min="0.01" step="0.01" placeholder="0.00" required>
           </label>
           <label>
-            <span>Deadline</span>
-            <input name="deadline" type="date" required>
-          </label>
-        </div>
-
-        <label>
-          <span>Currency</span>
-          <select name="currency" required>
-            <option value="USD">Dollars (USD)</option>
-            <option value="NGN">Naira (NGN)</option>
-            <option value="EUR">Euros (EUR)</option>
-            <option value="GBP">Pounds (GBP)</option>
-          </select>
-        </label>
-
-        <label>
-          <span>Notes</span>
-          <input name="notes" type="text" maxlength="240" placeholder="Optional">
-        </label>
-
-        <div class="app-modal-actions">
-          <button class="primary-button" type="submit">Save</button>
-        </div>
-        <p class="form-message" id="goalMessage" role="status"></p>
-      </form>
-    </dialog>
-
-    <dialog class="app-modal" id="contributionModal" aria-labelledby="contributionModalTitle">
-      <form id="contributionForm" class="app-modal-panel stacked-form">
-        <div class="app-modal-header">
-          <h2 id="contributionModalTitle">Add Savings</h2>
-          <button class="icon-button" id="closeContributionModalButton" type="button" aria-label="Close add savings form">
-            <svg class="icon" aria-hidden="true"><use href="#icon-x"></use></svg>
-          </button>
-        </div>
-
-        <input id="contributionGoalIdInput" name="goalId" type="hidden">
-        <p class="modal-context" id="contributionGoalContext"></p>
-
-        <div class="field-pair">
-          <label>
-            <span>Amount Saved</span>
-            <input id="contributionAmountInput" name="amount" type="number" min="0.01" step="0.01" placeholder="0.00" required>
-          </label>
-          <label>
-            <span>Date Saved</span>
-            <input id="savedOnInput" name="savedOn" type="date" required>
+            <span>Date</span>
+            <input id="savingsActivityDateInput" name="savedOn" type="date" required>
           </label>
         </div>
 
@@ -259,12 +224,13 @@
         </label>
 
         <div class="app-modal-actions">
-          <button class="primary-button" type="submit">Save</button>
+          <button class="secondary-button" id="cancelSavingsActivityModalButton" type="button">Cancel</button>
+          <button class="primary-button" id="saveSavingsActivityButton" type="submit">Save Activity</button>
         </div>
-        <p class="form-message" id="contributionMessage" role="status"></p>
+        <p class="form-message" id="savingsActivityMessage" role="status"></p>
       </form>
     </dialog>
 
-    <script src="savings.js"></script>
+    <script src="savings.js?v=20260717-savings-ledger-1"></script>
   </body>
 </html>
