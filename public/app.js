@@ -66,7 +66,7 @@ function renderDashboard({ income, debtPlanning, transactions, budgets }) {
   renderCycleBudget(
     transactions.transactions || [],
     budgets.budgets || [],
-    income.totals || {},
+    getMonthlyIncomeTotals(income),
     debtPlanning.summary || {}
   );
 }
@@ -284,6 +284,43 @@ function sumTotals(totals = {}) {
 
 function addToCurrencyTotals(totals, currency, amount) {
   totals[currency] = (totals[currency] || 0) + Number(amount || 0);
+}
+
+function getMonthlyIncomeTotals(income = {}) {
+  const totals = {};
+  const recurringSourceIds = new Set();
+
+  (income.sources || []).forEach((source) => {
+    const version = source.currentVersion;
+    if (!source.active || !version) return;
+
+    recurringSourceIds.add(source.id);
+    addToCurrencyTotals(
+      totals,
+      version.currency,
+      monthlyIncomeAmount(version.amount, source.frequency)
+    );
+  });
+
+  (income.entries || []).forEach((entry) => {
+    if (entry.incomeSourceId && recurringSourceIds.has(entry.incomeSourceId)) return;
+    addToCurrencyTotals(totals, entry.currency, entry.amount);
+  });
+
+  return hasTotals(totals) ? totals : { ...(income.totals || {}) };
+}
+
+function monthlyIncomeAmount(amount, frequency) {
+  const monthlyMultiplier = {
+    WEEKLY: 52 / 12,
+    BI_WEEKLY: 26 / 12,
+    SEMI_MONTHLY: 2,
+    MONTHLY: 1,
+    QUARTERLY: 1 / 3,
+    ANNUAL: 1 / 12
+  }[frequency] || 1;
+
+  return Math.round(Number(amount || 0) * monthlyMultiplier * 100) / 100;
 }
 
 function subtractCurrencyTotals(incomeTotals = {}, expenseTotals = {}) {
