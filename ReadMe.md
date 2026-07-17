@@ -13,10 +13,10 @@ A small full-stack budget tracker with Postgres, Prisma, private user accounts, 
 - Plan monthly debt payments separately from actual payments
 - Keep debt payment history by salary cycle
 - Track fixed expenses like rent, electricity, and subscriptions
-- Set savings goals with deadlines and record savings contributions
+- Record savings deposits, money used, corrections, and monthly activity
 - Plan future goals such as a house, car, vacation, education, wedding, or business
 - Track a goal's total cost separately from a down payment or custom savings target
-- Navigate with a main menu for Dashboard, Income, Fixed Expenses, Debts, Savings, and Profile
+- Navigate with a main menu for Dashboard, Income, Fixed Expenses, Debts, Savings, Future Goals, and Profile
 - Track income and expenses by month
 - Set spending limits for budget categories
 - Review monthly totals, remaining cash, and savings rate
