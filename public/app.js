@@ -30,14 +30,15 @@ async function initialize() {
 
   try {
     await requireSession();
-    const [income, debtPlanning, transactions, budgets] = await Promise.all([
+    const [income, debtPlanning, transactions, budgets, savings] = await Promise.all([
       apiRequest(`/api/income?month=${encodeURIComponent(selectedMonth)}`),
       apiRequest(`/api/debt-planning?month=${encodeURIComponent(selectedMonth)}`),
       apiRequest(`/api/transactions?month=${encodeURIComponent(selectedMonth)}`),
-      apiRequest(`/api/budgets?month=${encodeURIComponent(selectedMonth)}`)
+      apiRequest(`/api/budgets?month=${encodeURIComponent(selectedMonth)}`),
+      apiRequest(`/api/savings?month=${encodeURIComponent(selectedMonth)}`)
     ]);
 
-    renderDashboard({ income, debtPlanning, transactions, budgets });
+    renderDashboard({ income, debtPlanning, transactions, budgets, savings });
   } catch (error) {
     renderError(error.message || "Could not load dashboard.");
   }
@@ -58,7 +59,7 @@ async function requireSession() {
   }
 }
 
-function renderDashboard({ income, debtPlanning, transactions, budgets }) {
+function renderDashboard({ income, debtPlanning, transactions, budgets, savings }) {
   renderGlanceCards(income, debtPlanning);
   renderDebtChart(debtPlanning);
   renderActiveDebts(debtPlanning.debts || []);
@@ -67,7 +68,8 @@ function renderDashboard({ income, debtPlanning, transactions, budgets }) {
     transactions.transactions || [],
     budgets.budgets || [],
     getMonthlyIncomeTotals(income),
-    debtPlanning.summary || {}
+    debtPlanning.summary || {},
+    savings.totals || {}
   );
 }
 
@@ -191,11 +193,12 @@ function renderRecentActivity(incomeEntries, transactions, debts) {
   `).join("");
 }
 
-function renderCycleBudget(transactions, budgets, incomeTotals, debtSummary) {
+function renderCycleBudget(transactions, budgets, incomeTotals, debtSummary, savingsTotals) {
   const incomeByCurrency = { ...incomeTotals };
   const fixedExpensesByCurrency = {};
   const otherSpendingByCurrency = {};
   const debtPaymentsByCurrency = { ...(debtSummary.debtActuallyPaidByCurrency || {}) };
+  const savingsByCurrency = { ...(savingsTotals.savedThisMonthByCurrency || {}) };
   const budgetByCurrency = {};
 
   transactions.forEach((transaction) => {
@@ -218,7 +221,8 @@ function renderCycleBudget(transactions, budgets, incomeTotals, debtSummary) {
   const totalOutgoingsByCurrency = mergeCurrencyTotals(
     fixedExpensesByCurrency,
     otherSpendingByCurrency,
-    debtPaymentsByCurrency
+    debtPaymentsByCurrency,
+    savingsByCurrency
   );
   const remainingByCurrency = subtractCurrencyTotals(incomeByCurrency, totalOutgoingsByCurrency);
   const displayCurrencies = [...new Set([
@@ -238,14 +242,15 @@ function renderCycleBudget(transactions, budgets, incomeTotals, debtSummary) {
 
   elements.cycleBudget.innerHTML = `
     <div class="amount-left-hero${hasNegativeTotals(remainingByCurrency) ? " is-negative" : ""}">
-      <span>Available after spending and debt</span>
+      <span>Available after spending, debt, and savings</span>
       <strong>${formatTotals(remainingByCurrency)}</strong>
     </div>
     <div class="amount-left-breakdown">
       <span>Monthly income <strong>${formatBreakdownTotals(incomeByCurrency, displayCurrencies)}</strong></span>
-      <span>Fixed expenses <strong>−${formatBreakdownTotals(fixedExpensesByCurrency, displayCurrencies)}</strong></span>
-      <span>Other spending <strong>−${formatBreakdownTotals(otherSpendingByCurrency, displayCurrencies)}</strong></span>
-      <span>Debt payments made <strong>−${formatBreakdownTotals(debtPaymentsByCurrency, displayCurrencies)}</strong></span>
+      <span>Fixed expenses <strong>${formatOutflowTotals(fixedExpensesByCurrency, displayCurrencies)}</strong></span>
+      <span>Other spending <strong>${formatOutflowTotals(otherSpendingByCurrency, displayCurrencies)}</strong></span>
+      <span>Debt payments made <strong>${formatOutflowTotals(debtPaymentsByCurrency, displayCurrencies)}</strong></span>
+      <span>Net savings this month <strong>${formatOutflowTotals(savingsByCurrency, displayCurrencies)}</strong></span>
     </div>
     ${hasTotals(budgetByCurrency) ? `<p class="cycle-budget-note">Budget targets: ${formatTotals(budgetByCurrency)}</p>` : ""}
   `;
@@ -349,6 +354,17 @@ function formatBreakdownTotals(totals = {}, currencies = []) {
   const displayCurrencies = currencies.length ? currencies : ["USD"];
   return displayCurrencies
     .map((currency) => formatCurrency(Number(totals[currency] || 0), currency))
+    .join(" / ");
+}
+
+function formatOutflowTotals(totals = {}, currencies = []) {
+  const displayCurrencies = currencies.length ? currencies : ["USD"];
+  return displayCurrencies
+    .map((currency) => {
+      const amount = Number(totals[currency] || 0);
+      const sign = amount < 0 ? "+" : "-";
+      return `${sign}${formatCurrency(Math.abs(amount), currency)}`;
+    })
     .join(" / ");
 }
 
