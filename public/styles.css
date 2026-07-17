@@ -1021,8 +1021,111 @@ textarea:focus {
   overflow-wrap: anywhere;
 }
 
-.debt-forms {
+.debt-forms,
+.debt-payment-overview {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.debt-payment-overview {
+  display: grid;
+  gap: 12px;
+}
+
+.debt-payment-summary {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.debt-plan-summary {
+  background: var(--blue-soft);
+  border-color: rgba(37, 99, 169, 0.18);
+}
+
+.debt-actual-summary {
+  background: var(--green-soft);
+  border-color: rgba(22, 121, 79, 0.18);
+}
+
+.debt-payment-summary > div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.debt-action-label,
+.completed-debt-total span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.debt-payment-summary strong {
+  color: var(--ink);
+  font-size: 1.32rem;
+}
+
+.debt-payment-summary small,
+.completed-debt-card small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
+.completed-debts-panel {
+  margin-top: 18px;
+}
+
+.completed-debt-list {
+  display: grid;
+  gap: 10px;
+}
+
+.completed-debt-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 18px;
+  padding: 14px;
+  background: var(--green-soft);
+  border: 1px solid rgba(22, 121, 79, 0.18);
+  border-radius: var(--radius);
+}
+
+.completed-debt-main {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.completed-debt-main h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.completed-check {
+  display: inline-grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  place-items: center;
+  color: #ffffff;
+  background: var(--green);
+  border-radius: 50%;
+  font-weight: 900;
+}
+
+.completed-debt-total {
+  display: grid;
+  text-align: right;
 }
 
 .compact-form {
@@ -1748,8 +1851,24 @@ tbody tr:last-child td {
   .debt-card-head,
   .debt-stats,
   .debt-forms,
+  .debt-payment-overview,
+  .completed-debt-card,
   .history-row {
     grid-template-columns: 1fr;
+  }
+
+  .debt-payment-summary {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .debt-payment-summary .primary-button,
+  .debt-payment-summary .secondary-button {
+    width: 100%;
+  }
+
+  .completed-debt-total {
+    text-align: left;
   }
 
   .summary-grid {

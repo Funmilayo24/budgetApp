@@ -33,14 +33,37 @@ const elements = {
   activeDebtCount: document.querySelector("#activeDebtCount"),
   debtList: document.querySelector("#debtList"),
   debtEmptyState: document.querySelector("#debtEmptyState"),
+  completedDebtsPanel: document.querySelector("#completedDebtsPanel"),
+  completedDebtList: document.querySelector("#completedDebtList"),
   historyPanel: document.querySelector("#historyPanel"),
   historyTitle: document.querySelector("#historyTitle"),
-  historyList: document.querySelector("#historyList")
+  historyList: document.querySelector("#historyList"),
+  planModal: document.querySelector("#planModal"),
+  planForm: document.querySelector("#planForm"),
+  planDebtId: document.querySelector("#planDebtId"),
+  planAmountInput: document.querySelector("#planAmountInput"),
+  planNoteInput: document.querySelector("#planNoteInput"),
+  planModalTitle: document.querySelector("#planModalTitle"),
+  planModalContext: document.querySelector("#planModalContext"),
+  planMessage: document.querySelector("#planMessage"),
+  closePlanModalButton: document.querySelector("#closePlanModalButton"),
+  cancelPlanModalButton: document.querySelector("#cancelPlanModalButton"),
+  paymentModal: document.querySelector("#paymentModal"),
+  paymentForm: document.querySelector("#paymentForm"),
+  paymentDebtId: document.querySelector("#paymentDebtId"),
+  paymentAmountInput: document.querySelector("#paymentAmountInput"),
+  paymentDateInput: document.querySelector("#paymentDateInput"),
+  paymentModalTitle: document.querySelector("#paymentModalTitle"),
+  paymentModalContext: document.querySelector("#paymentModalContext"),
+  paymentMessage: document.querySelector("#paymentMessage"),
+  closePaymentModalButton: document.querySelector("#closePaymentModalButton"),
+  cancelPaymentModalButton: document.querySelector("#cancelPaymentModalButton")
 };
 
 const state = {
   categories: [],
   debts: [],
+  completedDebts: [],
   summary: {
     monthlyDebtPlannedByCurrency: {},
     debtActuallyPaidByCurrency: {},
@@ -99,23 +122,40 @@ function bindEvents() {
     await createDebt(new FormData(elements.debtForm));
   });
 
-  elements.debtList.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const form = event.target;
-
-    if (form.classList.contains("plan-form")) {
-      await savePlan(form);
+  elements.debtList.addEventListener("click", async (event) => {
+    const historyButton = event.target.closest("[data-history-id]");
+    if (historyButton) {
+      await showHistory(historyButton.dataset.historyId);
+      return;
     }
 
-    if (form.classList.contains("payment-form")) {
-      await recordPayment(form);
+    const planButton = event.target.closest("[data-plan-id]");
+    if (planButton) {
+      openPlanModal(planButton.dataset.planId);
+      return;
     }
+
+    const paymentButton = event.target.closest("[data-payment-id]");
+    if (paymentButton) openPaymentModal(paymentButton.dataset.paymentId);
   });
 
-  elements.debtList.addEventListener("click", async (event) => {
+  elements.completedDebtList.addEventListener("click", async (event) => {
     const button = event.target.closest("[data-history-id]");
-    if (!button) return;
-    await showHistory(button.dataset.historyId);
+    if (button) await showHistory(button.dataset.historyId);
+  });
+
+  elements.planForm.addEventListener("submit", savePlan);
+  elements.closePlanModalButton.addEventListener("click", closePlanModal);
+  elements.cancelPlanModalButton.addEventListener("click", closePlanModal);
+  elements.planModal.addEventListener("click", (event) => {
+    if (event.target === elements.planModal) closePlanModal();
+  });
+
+  elements.paymentForm.addEventListener("submit", recordPayment);
+  elements.closePaymentModalButton.addEventListener("click", closePaymentModal);
+  elements.cancelPaymentModalButton.addEventListener("click", closePaymentModal);
+  elements.paymentModal.addEventListener("click", (event) => {
+    if (event.target === elements.paymentModal) closePaymentModal();
   });
 }
 
@@ -131,6 +171,7 @@ async function loadPlanning() {
   const data = await apiRequest(`/api/debt-planning?month=${encodeURIComponent(selectedMonth)}`);
   state.categories = data.categories || [];
   state.debts = data.debts || [];
+  state.completedDebts = data.completedDebts || [];
   state.summary = data.summary || state.summary;
   render();
 }
@@ -159,46 +200,98 @@ async function createDebt(formData) {
   }
 }
 
-async function savePlan(form) {
-  const formData = new FormData(form);
+async function savePlan(event) {
+  event.preventDefault();
+  const formData = new FormData(elements.planForm);
 
   try {
     await apiRequest("/api/debt-payment-plans", {
       method: "POST",
       body: JSON.stringify({
-        debtId: form.dataset.debtId,
+        debtId: formData.get("debtId"),
         month: selectedMonth,
         amount: Number(formData.get("amount")),
         note: formData.get("note")
       })
     });
-    showMessage("Planned payment saved.", elements.debtPageMessage);
+    closePlanModal();
+    showMessage("Monthly plan updated.", elements.debtPageMessage);
     await loadPlanning();
   } catch (error) {
-    showMessage(error.message, elements.debtPageMessage);
+    showMessage(error.message, elements.planMessage);
   }
 }
 
-async function recordPayment(form) {
-  const formData = new FormData(form);
+async function recordPayment(event) {
+  event.preventDefault();
+  const formData = new FormData(elements.paymentForm);
 
   try {
     await apiRequest("/api/debt-payments", {
       method: "POST",
       body: JSON.stringify({
-        debtId: form.dataset.debtId,
+        debtId: formData.get("debtId"),
         month: selectedMonth,
         amount: Number(formData.get("amount")),
         paidOn: formData.get("paidOn") || toDateValue(new Date()),
         note: formData.get("note")
       })
     });
-    form.reset();
-    showMessage("Actual payment recorded.", elements.debtPageMessage);
+    closePaymentModal();
+    showMessage("Payment recorded.", elements.debtPageMessage);
     await loadPlanning();
   } catch (error) {
-    showMessage(error.message, elements.debtPageMessage);
+    showMessage(error.message, elements.paymentMessage);
   }
+}
+
+function openPlanModal(debtId) {
+  const debt = state.debts.find((item) => item.id === debtId);
+  if (!debt || !isSelectedMonthEditable()) return;
+
+  elements.planForm.reset();
+  clearMessage(elements.planMessage);
+  elements.planDebtId.value = debt.id;
+  elements.planAmountInput.value = debt.plan?.amount ?? debt.minimumPayment ?? 0;
+  elements.planAmountInput.max = debt.currentBalance;
+  elements.planNoteInput.value = debt.plan?.note || "";
+  elements.planModalTitle.textContent = debt.plan ? "Edit Planned Payment" : "Create Payment Plan";
+  elements.planModalContext.textContent = `${debt.name} · ${formatCurrency(debt.currentBalance, debt.currency)} remaining`;
+  elements.planModal.showModal();
+  elements.planAmountInput.focus();
+  elements.planAmountInput.select();
+}
+
+function closePlanModal() {
+  if (elements.planModal.open) elements.planModal.close();
+  elements.planForm.reset();
+  clearMessage(elements.planMessage);
+}
+
+function openPaymentModal(debtId) {
+  const debt = state.debts.find((item) => item.id === debtId);
+  if (!debt || !isSelectedMonthEditable()) return;
+
+  const plannedRemaining = Math.max(0, Number(debt.plan?.amount || 0) - Number(debt.actualPaidThisMonth || 0));
+  const suggestedAmount = Math.min(debt.currentBalance, plannedRemaining);
+
+  elements.paymentForm.reset();
+  clearMessage(elements.paymentMessage);
+  elements.paymentDebtId.value = debt.id;
+  elements.paymentAmountInput.value = suggestedAmount > 0 ? suggestedAmount : "";
+  elements.paymentAmountInput.max = debt.currentBalance;
+  elements.paymentDateInput.value = toDateValue(new Date());
+  elements.paymentModalTitle.textContent = "Record Payment";
+  elements.paymentModalContext.textContent = `${debt.name} · ${formatCurrency(debt.currentBalance, debt.currency)} remaining`;
+  elements.paymentModal.showModal();
+  elements.paymentAmountInput.focus();
+  elements.paymentAmountInput.select();
+}
+
+function closePaymentModal() {
+  if (elements.paymentModal.open) elements.paymentModal.close();
+  elements.paymentForm.reset();
+  clearMessage(elements.paymentMessage);
 }
 
 async function showHistory(debtId) {
@@ -249,11 +342,18 @@ function renderSummary() {
 function renderDebts() {
   elements.debtList.innerHTML = state.debts.map(renderDebtCard).join("");
   elements.debtEmptyState.classList.toggle("visible", state.debts.length === 0);
+  elements.debtEmptyState.textContent = state.completedDebts.length
+    ? "No active debts. Everything is paid off."
+    : "No active debts yet.";
+  elements.completedDebtsPanel.hidden = state.completedDebts.length === 0;
+  elements.completedDebtList.innerHTML = state.completedDebts.map(renderCompletedDebtCard).join("");
 }
 
 function renderDebtCard(debt) {
-  const disabled = debt.status !== "ACTIVE" ? "disabled" : "";
-  const planAmount = debt.plan ? debt.plan.amount : debt.minimumPayment || "";
+  const editable = isSelectedMonthEditable();
+  const disabled = editable ? "" : "disabled";
+  const planAmount = debt.plan?.amount || 0;
+  const paymentCount = debt.paymentsThisMonth?.length || 0;
   const paidLabel = `${debt.percentPaid}% Paid`;
   const remainingLabel = `${debt.percentRemaining}% Remaining`;
 
@@ -264,7 +364,7 @@ function renderDebtCard(debt) {
           <p class="eyebrow">${escapeHtml(categoryLabels[debt.category] || debt.category)}</p>
           <h3>${escapeHtml(debt.name)}</h3>
         </div>
-        <span class="type-pill ${debt.status === "PAID" ? "income" : "expense"}">${debt.status.toLowerCase()}</span>
+        <span class="type-pill expense">active</span>
       </div>
 
       <div class="debt-stats">
@@ -281,27 +381,49 @@ function renderDebtCard(debt) {
         <span>${remainingLabel}</span>
       </div>
 
-      <div class="debt-forms">
-        <form class="plan-form compact-form" data-debt-id="${escapeHtml(debt.id)}">
-          <label>
-            <span>Planned This Month</span>
-            <input name="amount" type="number" min="0" step="0.01" value="${escapeHtml(planAmount)}" ${disabled}>
-          </label>
-          <input name="note" type="text" maxlength="240" placeholder="Plan note" ${disabled}>
-          <button class="secondary-button" type="submit" ${disabled}>Save Plan</button>
-        </form>
+      <div class="debt-payment-overview">
+        <section class="debt-payment-summary debt-plan-summary">
+          <div>
+            <span class="debt-action-label">Monthly plan</span>
+            <strong>${formatCurrency(planAmount, debt.currency)}</strong>
+            <small>${debt.plan?.note ? escapeHtml(debt.plan.note) : debt.plan ? "Plan saved" : "No plan set"}</small>
+          </div>
+          <button class="secondary-button" type="button" data-plan-id="${escapeHtml(debt.id)}" ${disabled}>
+            ${debt.plan ? "Edit plan" : "Create plan"}
+          </button>
+        </section>
 
-        <form class="payment-form compact-form" data-debt-id="${escapeHtml(debt.id)}">
-          <label>
-            <span>Actual Payment</span>
-            <input name="amount" type="number" min="0.01" step="0.01" ${disabled}>
-          </label>
-          <input name="paidOn" type="date" value="${toDateValue(new Date())}" ${disabled}>
-          <button class="primary-button" type="submit" ${disabled}>Record Payment</button>
-        </form>
+        <section class="debt-payment-summary debt-actual-summary">
+          <div>
+            <span class="debt-action-label">Paid this month</span>
+            <strong>${formatCurrency(debt.actualPaidThisMonth, debt.currency)}</strong>
+            <small>${paymentCount} ${paymentCount === 1 ? "payment" : "payments"} recorded</small>
+          </div>
+          <button class="primary-button" type="button" data-payment-id="${escapeHtml(debt.id)}" ${disabled}>Record payment</button>
+        </section>
       </div>
 
       <button class="icon-text-button history-button" type="button" data-history-id="${escapeHtml(debt.id)}">View History</button>
+    </article>
+  `;
+}
+
+function renderCompletedDebtCard(debt) {
+  return `
+    <article class="completed-debt-card">
+      <div class="completed-debt-main">
+        <span class="completed-check" aria-hidden="true">✓</span>
+        <div>
+          <p class="eyebrow">${escapeHtml(categoryLabels[debt.category] || debt.category)}</p>
+          <h3>${escapeHtml(debt.name)}</h3>
+          <small>Paid off${debt.paidAt ? ` · ${escapeHtml(formatDate(debt.paidAt))}` : ""}</small>
+        </div>
+      </div>
+      <div class="completed-debt-total">
+        <span>Total paid</span>
+        <strong>${formatCurrency(debt.originalAmount, debt.currency)}</strong>
+      </div>
+      <button class="icon-text-button" type="button" data-history-id="${escapeHtml(debt.id)}">View History</button>
     </article>
   `;
 }
@@ -352,6 +474,20 @@ function formatTotals(totals = {}) {
   const entries = Object.entries(totals).filter(([, amount]) => amount > 0);
   if (!entries.length) return formatCurrency(0, "USD");
   return entries.map(([currency, amount]) => formatCurrency(amount, currency)).join(" / ");
+}
+
+function formatDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric"
+  }).format(date);
+}
+
+function isSelectedMonthEditable() {
+  return selectedMonth >= toMonthValue(new Date());
 }
 
 function toMonthValue(date) {

@@ -16,6 +16,22 @@ async function listPlanning(userId, monthValue) {
   const month = parseMonth(monthValue);
   const cycle = await getOrCreateSalaryCycle(userId, month);
 
+  // Repair legacy or externally-updated debts whose balance reached zero
+  // without their lifecycle status being updated.
+  await prisma.debt.updateMany({
+    where: {
+      userId,
+      deletedAt: null,
+      status: "ACTIVE",
+      currentBalance: { lte: 0 }
+    },
+    data: {
+      currentBalance: 0,
+      status: "PAID",
+      paidAt: new Date()
+    }
+  });
+
   const debts = await prisma.debt.findMany({
     where: {
       userId,
@@ -45,7 +61,8 @@ async function listPlanning(userId, monthValue) {
     categories: debtCategories,
     currencies: [...allowedCurrencies],
     summary: buildPlanningSummary(debts),
-    debts: debts.map(serializeDebtForPlanning)
+    debts: debts.filter((debt) => debt.status === "ACTIVE").map(serializeDebtForPlanning),
+    completedDebts: debts.filter((debt) => debt.status === "PAID").map(serializeDebtForPlanning)
   };
 }
 

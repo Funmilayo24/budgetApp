@@ -117,11 +117,11 @@
 
         <section class="summary-grid" aria-label="Debt summary">
           <article class="metric metric-income">
-            <p>Planned</p>
+            <p>Planned This Month</p>
             <strong id="plannedTotal">$0</strong>
           </article>
           <article class="metric metric-spent">
-            <p>Actually Paid</p>
+            <p>Paid This Month</p>
             <strong id="actualTotal">$0</strong>
           </article>
           <article class="metric metric-remaining">
@@ -144,6 +144,16 @@
 
           <div class="debt-list" id="debtList"></div>
           <p class="empty-state" id="debtEmptyState">No debts yet.</p>
+        </section>
+
+        <section class="panel completed-debts-panel" id="completedDebtsPanel" hidden>
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Completed</p>
+              <h2>Paid-Off Debts</h2>
+            </div>
+          </div>
+          <div class="completed-debt-list" id="completedDebtList"></div>
         </section>
 
         <section class="panel history-panel" id="historyPanel" hidden>
@@ -224,6 +234,68 @@
           <button class="primary-button" type="submit">Save</button>
         </div>
         <p class="form-message" id="debtMessage" role="status"></p>
+      </form>
+    </dialog>
+
+    <dialog class="app-modal" id="planModal" aria-labelledby="planModalTitle">
+      <form class="app-modal-panel stacked-form" id="planForm">
+        <div class="app-modal-header">
+          <div>
+            <p class="eyebrow">Monthly plan</p>
+            <h2 id="planModalTitle">Edit Planned Payment</h2>
+          </div>
+          <button class="icon-button" id="closePlanModalButton" type="button" aria-label="Close planned payment form">
+            <svg class="icon" aria-hidden="true"><use href="#icon-x"></use></svg>
+          </button>
+        </div>
+        <p class="modal-context" id="planModalContext"></p>
+        <input id="planDebtId" name="debtId" type="hidden">
+        <label>
+          <span>Amount planned for this month</span>
+          <input id="planAmountInput" name="amount" type="number" min="0" step="0.01" required>
+        </label>
+        <label>
+          <span>Plan note</span>
+          <input id="planNoteInput" name="note" type="text" maxlength="240" placeholder="Optional note">
+        </label>
+        <div class="app-modal-actions">
+          <button class="secondary-button" id="cancelPlanModalButton" type="button">Cancel</button>
+          <button class="primary-button" type="submit">Save Plan</button>
+        </div>
+        <p class="form-message" id="planMessage" role="status"></p>
+      </form>
+    </dialog>
+
+    <dialog class="app-modal" id="paymentModal" aria-labelledby="paymentModalTitle">
+      <form class="app-modal-panel stacked-form" id="paymentForm">
+        <div class="app-modal-header">
+          <div>
+            <p class="eyebrow">Actual payment</p>
+            <h2 id="paymentModalTitle">Record Payment</h2>
+          </div>
+          <button class="icon-button" id="closePaymentModalButton" type="button" aria-label="Close payment form">
+            <svg class="icon" aria-hidden="true"><use href="#icon-x"></use></svg>
+          </button>
+        </div>
+        <p class="modal-context" id="paymentModalContext"></p>
+        <input id="paymentDebtId" name="debtId" type="hidden">
+        <label>
+          <span>Amount actually paid</span>
+          <input id="paymentAmountInput" name="amount" type="number" min="0.01" step="0.01" required>
+        </label>
+        <label>
+          <span>Payment date</span>
+          <input id="paymentDateInput" name="paidOn" type="date" required>
+        </label>
+        <label>
+          <span>Payment note</span>
+          <input name="note" type="text" maxlength="240" placeholder="Optional note">
+        </label>
+        <div class="app-modal-actions">
+          <button class="secondary-button" id="cancelPaymentModalButton" type="button">Cancel</button>
+          <button class="primary-button" type="submit">Record Payment</button>
+        </div>
+        <p class="form-message" id="paymentMessage" role="status"></p>
       </form>
     </dialog>
 
