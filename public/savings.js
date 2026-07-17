@@ -130,6 +130,12 @@ async function loadSavings() {
   state.contributions = data.contributions || [];
   state.totals = data.totals || {};
   render();
+
+  const requestedGoalId = new URLSearchParams(window.location.search).get("goal");
+  if (requestedGoalId && state.goals.some((goal) => goal.id === requestedGoalId)) {
+    window.history.replaceState({}, document.title, window.location.pathname);
+    openContributionModal(requestedGoalId);
+  }
 }
 
 async function saveGoal(formData) {

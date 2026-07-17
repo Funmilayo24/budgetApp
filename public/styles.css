@@ -1567,6 +1567,94 @@ tbody tr:last-child td {
   flex-wrap: wrap;
 }
 
+.future-goals-panel {
+  min-width: 0;
+}
+
+.future-goal-list {
+  display: grid;
+  gap: 14px;
+}
+
+.future-goal-card {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  background: #fbfcfd;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.future-goal-card-head,
+.future-goal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.future-goal-card h3 {
+  margin: 4px 0 2px;
+  font-size: 1.18rem;
+}
+
+.future-goal-card-head p {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.future-goal-type {
+  display: inline-flex;
+  padding: 4px 8px;
+  color: var(--violet);
+  background: #ece8f8;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.future-goal-numbers {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.future-goal-numbers > span {
+  display: grid;
+  gap: 3px;
+  padding: 12px;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.future-goal-numbers strong {
+  color: var(--ink);
+  font-size: 1.02rem;
+  overflow-wrap: anywhere;
+}
+
+.future-goal-numbers small {
+  color: var(--muted);
+}
+
+.future-goal-footer {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.future-goal-footer strong {
+  color: var(--ink);
+}
+
 @media (max-width: 920px) {
   .dashboard-layout {
     grid-template-columns: 1fr;
@@ -1848,6 +1936,7 @@ tbody tr:last-child td {
   .summary-grid,
   .field-pair,
   .inline-form,
+  .future-goal-numbers,
   .debt-card-head,
   .debt-stats,
   .debt-forms,
@@ -1855,6 +1944,17 @@ tbody tr:last-child td {
   .completed-debt-card,
   .history-row {
     grid-template-columns: 1fr;
+  }
+
+  .future-goal-card-head,
+  .future-goal-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .future-goal-card-head .secondary-button,
+  .future-goal-footer .primary-button {
+    width: 100%;
   }
 
   .debt-payment-summary {

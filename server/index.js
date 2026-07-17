@@ -33,6 +33,20 @@ const allowedIncomeFrequencies = new Set([
   "QUARTERLY",
   "ANNUAL"
 ]);
+const allowedFutureGoalTypes = new Set([
+  "HOUSE",
+  "CAR",
+  "VACATION",
+  "EDUCATION",
+  "WEDDING",
+  "BUSINESS",
+  "OTHER"
+]);
+const allowedGoalFundingStrategies = new Set([
+  "FULL_COST",
+  "DOWN_PAYMENT",
+  "CUSTOM_TARGET"
+]);
 const defaultBudgetAmounts = {
   Housing: 1200,
   Food: 500,
@@ -670,6 +684,9 @@ app.post("/api/savings-goals", requireUser, async (req, res, next) => {
       data: {
         userId: req.user.id,
         name: payload.name,
+        goalType: payload.goalType,
+        fundingStrategy: payload.fundingStrategy,
+        totalCost: payload.totalCost,
         targetAmount: payload.targetAmount,
         currency: payload.currency,
         deadline: payload.deadline,
@@ -703,7 +720,7 @@ app.put("/api/savings-goals/:id", requireUser, async (req, res, next) => {
       return;
     }
 
-    const payload = parseSavingsGoalPayload(req.body);
+    const payload = parseSavingsGoalPayload(req.body, existingGoal);
     if (payload.error) {
       res.status(400).json({ error: payload.error });
       return;
@@ -713,6 +730,9 @@ app.put("/api/savings-goals/:id", requireUser, async (req, res, next) => {
       where: { id: existingGoal.id },
       data: {
         name: payload.name,
+        goalType: payload.goalType,
+        fundingStrategy: payload.fundingStrategy,
+        totalCost: payload.totalCost,
         targetAmount: payload.targetAmount,
         currency: payload.currency,
         deadline: payload.deadline,
@@ -1119,6 +1139,9 @@ function serializeSavingsGoal(goal) {
   return {
     id: goal.id,
     name: goal.name,
+    goalType: goal.goalType || "OTHER",
+    fundingStrategy: goal.fundingStrategy || "CUSTOM_TARGET",
+    totalCost: goal.totalCost === null || goal.totalCost === undefined ? null : Number(goal.totalCost),
     targetAmount,
     savedAmount,
     remainingAmount,
@@ -1258,19 +1281,51 @@ async function parseFixedExpensePayload(body) {
   };
 }
 
-function parseSavingsGoalPayload(body) {
+function parseSavingsGoalPayload(body, existingGoal = null) {
   const name = String(body.name || "").trim();
-  const targetAmount = Number(body.targetAmount);
+  const goalTypeValue = body.goalType === undefined ? existingGoal?.goalType : body.goalType;
+  const fundingValue = body.fundingStrategy === undefined ? existingGoal?.fundingStrategy : body.fundingStrategy;
+  const goalType = allowedFutureGoalTypes.has(String(goalTypeValue || "").toUpperCase())
+    ? String(goalTypeValue).toUpperCase()
+    : "OTHER";
+  const fundingStrategy = allowedGoalFundingStrategies.has(String(fundingValue || "").toUpperCase())
+    ? String(fundingValue).toUpperCase()
+    : "CUSTOM_TARGET";
+  const submittedTotalCost = body.totalCost === undefined ? existingGoal?.totalCost : body.totalCost;
+  const parsedTotalCost = hasValue(submittedTotalCost) ? Number(submittedTotalCost) : null;
+  let targetAmount = Number(body.targetAmount);
   const currency = parseCurrency(body.currency);
   const deadline = parseDate(body.deadline);
   const notes = String(body.notes || "").trim();
+
+  if (parsedTotalCost !== null && (!Number.isFinite(parsedTotalCost) || parsedTotalCost <= 0)) {
+    return { error: "Enter a valid total cost." };
+  }
+
+  if (fundingStrategy === "FULL_COST") {
+    if (parsedTotalCost === null) {
+      return { error: "Enter the total cost for a full-cost goal." };
+    }
+    targetAmount = parsedTotalCost;
+  }
 
   if (!name || !Number.isFinite(targetAmount) || targetAmount <= 0 || !currency || !deadline) {
     return { error: "Enter a valid goal, target amount, currency, and deadline." };
   }
 
+  if (fundingStrategy === "DOWN_PAYMENT" && parsedTotalCost === null) {
+    return { error: "Enter the house or car's total cost." };
+  }
+
+  if (parsedTotalCost !== null && targetAmount > parsedTotalCost) {
+    return { error: "The savings target cannot exceed the total cost." };
+  }
+
   return {
     name,
+    goalType,
+    fundingStrategy,
+    totalCost: parsedTotalCost === null ? null : roundCurrency(parsedTotalCost),
     targetAmount: roundCurrency(targetAmount),
     currency,
     deadline,
